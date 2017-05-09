@@ -5,6 +5,9 @@ Go-implementation of CMS DMWM WorkQueue
 [![Go Report Card](https://goreportcard.com/badge/github.com/vkuznet/WorkQueue)](https://goreportcard.com/report/github.com/vkuznet/WorkQueue)
 [![GoDoc](https://godoc.org/github.com/vkuznet/WorkQueue?status.svg)](https://godoc.org/github.com/vkuznet/WorkQueue)
 
+### WorkQueue
+[WorkQueue](https://github.com/dmwm/WMCore/wiki/WorkQueue) is CMS DMWM component to schedule WMAgent jobs
+
 ### Build
 ```
 git clone git@github.com:vkuznet/WorkQueue.git
