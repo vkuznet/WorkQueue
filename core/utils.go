@@ -1,6 +1,6 @@
 package core
 
-// workqueue agent server implementation
+// WorkQueue  server implementation
 // Copyright (c) 2017 - Valentin Kuznetsov <vkuznet@gmail.com>
 
 import (
@@ -10,7 +10,7 @@ import (
 	"log"
 
 	"github.com/rcrowley/go-metrics"
-	"github.com/vkuznet/workqueue/utils"
+	"github.com/vkuznet/WorkQueue/utils"
 	"github.com/zemirco/couchdb"
 )
 

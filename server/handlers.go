@@ -1,6 +1,6 @@
 package server
 
-// workqueue agent server implementation
+// WorkQueue server implementation
 // Copyright (c) 2017 - Valentin Kuznetsov <vkuznet@gmail.com>
 
 import (
@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/segmentio/pointer"
-	"github.com/vkuznet/workqueue/core"
-	"github.com/vkuznet/workqueue/utils"
+	"github.com/vkuznet/WorkQueue/core"
+	"github.com/vkuznet/WorkQueue/utils"
 	"github.com/zemirco/couchdb"
 )
 

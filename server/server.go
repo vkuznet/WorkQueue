@@ -1,6 +1,6 @@
 package server
 
-// workqueue server implementation
+// WorkQueue server implementation
 // Copyright (c) 2017 - Valentin Kuznetsov <vkuznet@gmail.com>
 
 import (
@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/vkuznet/workqueue/core"
+	"github.com/vkuznet/WorkQueue/core"
 	"github.com/zemirco/couchdb"
 
 	// web profiler, see https://golang.org/pkg/net/http/pprof

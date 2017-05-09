@@ -1,6 +1,6 @@
 package utils
 
-// workqueue/utils - Go utilities for workqueue
+// WorkQueue/utils - Go utilities for WorkQueue
 //
 // Copyright (c) 2017 - Valentin Kuznetsov <vkuznet@gmail.com>
 

@@ -1,4 +1,4 @@
-// workqueue - Go implementation of DMWM workqueue
+// WorkQueue - Go implementation of DMWM WorkQueue
 //
 // Copyright (c) 2017 - Valentin Kuznetsov <vkuznet@gmail.com>
 //
@@ -11,8 +11,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/vkuznet/workqueue/server"
-	"github.com/vkuznet/workqueue/utils"
+	"github.com/vkuznet/WorkQueue/server"
+	"github.com/vkuznet/WorkQueue/utils"
 )
 
 func main() {
