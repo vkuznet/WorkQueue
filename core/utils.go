@@ -14,7 +14,10 @@ import (
 	"github.com/zemirco/couchdb"
 )
 
+// DB points to CouchDB
 var DB couchdb.DatabaseService
+
+// VIEW represents CouchDB view
 var VIEW couchdb.ViewService
 
 // Metrics of the agent
@@ -47,6 +50,7 @@ func (m *Metrics) ToDict() map[string]int64 {
 	return dict
 }
 
+// Record data-type defines ReqMgr2 data record
 type Record map[string]interface{}
 
 // Convert2Record converts given interface to Record data type
@@ -87,18 +91,12 @@ func loadReqMgr2Data(data []byte) []Record {
 	return out
 
 }
+
+// GetRequests function fetches requests from ReqMgr2 data service
 func GetRequests(status string) []Record {
 	rurl := fmt.Sprintf("https://cmsweb.cern.ch/reqmgr2/data/request?status=%s", status)
 	resp := utils.FetchResponse(rurl, "")
 	data := loadReqMgr2Data(resp.Data)
-	/*
-		for _, rec := range data {
-			for key, val := range rec {
-				r := Convert2Record(val)
-				fmt.Println(key, r["Teams"], r["RequestWorkflow"])
-			}
-		}
-	*/
 	return data
 }
 
