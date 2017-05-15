@@ -57,6 +57,73 @@ func Blocks(dataset string) []string {
 	return out
 }
 
+// RunLumis keep track of run-lumis
+type RunLumis struct {
+	Run   int64
+	Lumis []int64
+}
+
+// String implements Stringer interface
+func (r *RunLumis) String() string {
+	return fmt.Sprintf("<Run: %d, Lumis: %v>", r.Run, r.Lumis)
+}
+
+// FileLumis keep track of block content
+type FileLumis struct {
+	Lfn      string
+	RunLumis RunLumis
+}
+
+// String implements Stringer interface
+func (r *FileLumis) String() string {
+	return fmt.Sprintf("<Lfn: %s, RunLumis: %v>", r.Lfn, r.RunLumis)
+}
+
+// MaskedBlock represents block record with list of fileLumis
+type MaskedBlock struct {
+	Block      string
+	FilesLumis []FileLumis
+}
+
+// String implements Stringer interface
+func (r *MaskedBlock) String() string {
+	return fmt.Sprintf("<Block: %s, FilesLumis: %v>", r.Block, r.FilesLumis)
+}
+
+// MaskedBlocks returns record of block details mased by provided lumis
+func MaskedBlocks(blocks []string) []MaskedBlock {
+	var requests []Request
+	for _, block := range blocks {
+		rurl := fmt.Sprintf("%s/filelumis?block_name=%s", dbsUrl(), url.PathEscape(block))
+		req := Request{Name: block, Url: rurl, Args: ""}
+		requests = append(requests, req)
+	}
+	var out []MaskedBlock
+	for _, rec := range Process(requests) { // key here is index, rec = {ReqName: []Records}
+		for block, row := range rec { // key here is block request.Name
+			switch r := row.(type) {
+			case []utils.Record:
+				var filesLumis []FileLumis
+				for _, vvv := range r {
+					lfn := vvv["logical_file_name"].(string)
+					run, _ := vvv["run_num"].(json.Number).Int64()
+					var lumis []int64
+					for _, v := range vvv["lumi_section_num"].([]interface{}) {
+						lumiNumber, _ := v.(json.Number).Int64()
+						lumis = append(lumis, lumiNumber)
+					}
+					runLumis := RunLumis{Run: run, Lumis: lumis}
+					fileLumis := FileLumis{Lfn: lfn, RunLumis: runLumis}
+					filesLumis = append(filesLumis, fileLumis)
+				}
+				maskedBlock := MaskedBlock{Block: block, FilesLumis: filesLumis}
+				out = append(out, maskedBlock)
+			}
+		}
+	}
+	return out
+}
+
 // ParentBlocks function retrieves block parents for given list of blocks
 func ParentBlocks(blocks []string) []string {
 	var requests []Request
