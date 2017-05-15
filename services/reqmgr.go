@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/vkuznet/WorkQueue/utils"
 )
@@ -24,20 +25,26 @@ func loadReqMgrData(data []byte) []utils.Record {
 
 	// original way to decode data
 	// err := json.Unmarshal(data, &rec)
+
 	if err != nil {
-		msg := fmt.Sprintf("ReqMgr unable to unmarshal the data, data=%s, error=%v", string(data), err)
-		fmt.Println(msg)
+		msg := fmt.Sprintf("ReqMgr unable to unmarshal data, data=%s, error=%v", string(data), err)
+		log.Println(msg)
 	}
-	out = append(out, rec)
+	for _, r := range rec["result"].([]interface{}) {
+		out = append(out, utils.Convert2Record(r))
+	}
 	return out
 }
 
 // reqMgrUnmarshal unmarshals ReqMgr data stream and return DAS records based on api
 func reqMgrUnmarshal(data []byte) []utils.Record {
-	records := loadReqMgrData(api, data)
-	var out []utils.Record
-	for _, rec := range records {
-		out = append(out, rec)
-	}
-	return out
+	return loadReqMgrData(data)
+}
+
+// GetRequests function fetches requests from ReqMgr2 data service
+func GetRequests(status string) []utils.Record {
+	rurl := fmt.Sprintf("%s/request?status=%s", reqmgrUrl(), status)
+	resp := utils.FetchResponse(rurl, "")
+	data := loadReqMgrData(resp.Data)
+	return data
 }

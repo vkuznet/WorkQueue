@@ -10,9 +10,22 @@ import (
 	"github.com/vkuznet/WorkQueue/utils"
 )
 
+func dbsUrl() string {
+	return "https://cmsweb.cern.ch/dbs/prod/global/DBSReader"
+}
+func phedexUrl() string {
+	return "https://cmsweb.cern.ch/phedex/datasvc/json/prod"
+}
+func sitedbUrl() string {
+	return "https://cmsweb.cern.ch/sitedb/data/prod"
+}
+func reqmgrUrl() string {
+	return "https://cmsweb.cern.ch/reqmgr2/data"
+}
+
 // Unmarshal
-func Unmarshal(r utils.ResponseType) []Record {
-	var records []Record
+func Unmarshal(r utils.ResponseType) []utils.Record {
+	var records []utils.Record
 	rurl := strings.ToLower(r.Url)
 	switch {
 	case strings.Contains(rurl, "phedex"):
@@ -35,7 +48,7 @@ type Request struct {
 }
 
 // Process concurrently process given set of requests
-func Process(requests []Request) []Record {
+func Process(requests []Request) []utils.Record {
 	// defer function will propagate panic message to higher level
 	//     defer utils.ErrPropagate("Process")
 
@@ -43,22 +56,29 @@ func Process(requests []Request) []Record {
 	defer close(out)
 	umap := map[string]int{}
 	for _, req := range requests {
-		umap[furl] = 1 // keep track of processed urls below
+		umap[req.Url] = 1 // keep track of processed urls below
 		go utils.Fetch(req.Url, req.Args, out)
 	}
 
 	// collect all results from out channel
-	var outRecords []Record
+	var outRecords []utils.Record
 	exit := false
 	for {
 		select {
 		case r := <-out:
-			record := make(Record)
-			var records []Record
+			record := make(utils.Record)
+			var records []utils.Record
 			for _, rec := range Unmarshal(r) {
 				records = append(records, rec)
 			}
-			record[r.Name] = records
+			var requestName string
+			for _, req := range requests {
+				if req.Url == r.Url {
+					requestName = req.Name
+					break
+				}
+			}
+			record[requestName] = records
 			outRecords = append(outRecords, record)
 			// remove from umap, indicate that we processed it
 			delete(umap, r.Url) // remove Url from map

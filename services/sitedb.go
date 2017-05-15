@@ -51,6 +51,6 @@ func loadSiteDBData(data []byte) []utils.Record {
 
 // siteDBUnmarshal unmarshals SiteDB data stream and return DAS records based on api
 func siteDBUnmarshal(data []byte) []utils.Record {
-	records := loadSiteDBData(api, data)
+	records := loadSiteDBData(data)
 	return records
 }

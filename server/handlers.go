@@ -14,6 +14,7 @@ import (
 
 	"github.com/segmentio/pointer"
 	"github.com/vkuznet/WorkQueue/core"
+	"github.com/vkuznet/WorkQueue/services"
 	"github.com/vkuznet/WorkQueue/utils"
 	"github.com/zemirco/couchdb"
 )
@@ -149,8 +150,7 @@ func RequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// get requests for given type
 	rtype := r.FormValue("type")
-	rurl := _config.ReqMgrURL
-	requests := core.GetRequests(rurl, rtype)
+	requests := services.GetRequests(rtype)
 	data, err := json.Marshal(requests)
 	if err != nil {
 		log.Println("ERROR StatusHandler", err)

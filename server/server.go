@@ -24,7 +24,6 @@ type Config struct {
 	MetricsFile     string `json:"MetricsFile"`     // file for metrics output
 	MetricsInterval int64  `json:"MetricsInterval"` // interval (in sec) to collect metrics
 	RequestType     string `json:"RequestType"`     // ReqMgr2 type of request to fetch
-	ReqMgrURL       string `json:"ReqMgrURL"`       // ReqMgr2 url
 	FetchInterval   int64  `json:"FetchInterval"`   // interval (in sec) to fetch ReqMgr2 data
 	CouchUrl        string `json:"CouchURL"`        // couch db url
 	Port            int    `json:"port"`            // port number given server runs on, default 8989
@@ -81,7 +80,7 @@ func Server(config Config) {
 
 	// initialize task dispatcher
 	dispatcher := core.NewDispatcher(config.Workers, config.QueueSize, config.MetricsFile, config.MetricsInterval)
-	dispatcher.Run(config.ReqMgrURL, config.RequestType, config.FetchInterval)
+	dispatcher.Run(config.RequestType, config.FetchInterval)
 
 	if authVar {
 		//start HTTPS server which require user certificates

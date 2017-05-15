@@ -4,10 +4,7 @@ package core
 // Copyright (c) 2017 - Valentin Kuznetsov <vkuznet@gmail.com>
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/rcrowley/go-metrics"
 	"github.com/vkuznet/WorkQueue/utils"
@@ -50,61 +47,11 @@ func (m *Metrics) ToDict() map[string]int64 {
 	return dict
 }
 
-// Record data-type defines ReqMgr2 data record
-type Record map[string]interface{}
-
-// Convert2Record converts given interface to Record data type
-func Convert2Record(item interface{}) Record {
-	switch r := item.(type) {
-	case map[string]interface{}:
-		rec := make(Record)
-		for kkk, vvv := range r {
-			rec[kkk] = vvv
-		}
-		return rec
-	case Record:
-		return r
-	}
-	return nil
-}
-
-func loadReqMgr2Data(data []byte) []Record {
-	var out []Record
-	var rec Record
-	// to prevent json.Unmarshal behavior to convert all numbers to float
-	// we'll use json decode method with instructions to use numbers as is
-	buf := bytes.NewBuffer(data)
-	dec := json.NewDecoder(buf)
-	dec.UseNumber()
-	err := dec.Decode(&rec)
-
-	// original way to decode data
-	// err := json.Unmarshal(data, &rec)
-
-	if err != nil {
-		msg := fmt.Sprintf("ReqMgr unable to unmarshal data, data=%s, error=%v", string(data), err)
-		log.Println(msg)
-	}
-	for _, r := range rec["result"].([]interface{}) {
-		out = append(out, Convert2Record(r))
-	}
-	return out
-
-}
-
-// GetRequests function fetches requests from ReqMgr2 data service
-func GetRequests(requrl, status string) []Record {
-	rurl := fmt.Sprintf("%s/data/request?status=%s", requrl, status)
-	resp := utils.FetchResponse(rurl, "")
-	data := loadReqMgr2Data(resp.Data)
-	return data
-}
-
 // helper function to parse ReqMgr2 record
 // the code may likely to change, since I don't know yet which attributes of
 // ReqMgr2 record will be necessary for WorkQueue
-func parseRequest(record Record) []Record {
-	var out []Record
+func parseRequest(record utils.Record) []utils.Record {
+	var out []utils.Record
 	for _, val := range record {
 		switch rec := val.(type) {
 		case map[string]interface{}:
@@ -113,7 +60,7 @@ func parseRequest(record Record) []Record {
 			rtype, _ := rec["RequestType"].(string)
 			workflow, _ := rec["RequestWorkflow"].(string)
 			teams, _ := rec["Teams"]
-			r := make(Record)
+			r := make(utils.Record)
 			r["name"] = name
 			r["status"] = status
 			r["type"] = rtype
@@ -128,7 +75,7 @@ func parseRequest(record Record) []Record {
 // helper function to parse ReqMgr2 record
 // the code may likely to change, since I don't know yet which attributes of
 // ReqMgr2 record will be necessary for WorkQueue
-func request2WQE(record Record) []WorkQueueElement {
+func request2WQE(record utils.Record) []WorkQueueElement {
 	var out []WorkQueueElement
 	var inputBlocks, parentData, pileupData map[string][]string
 	var numberOfLumis, numberOfFiles, numberOfEvents, jobs, blowupFactor, priority, filesProcessed int
