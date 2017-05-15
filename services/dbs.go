@@ -42,7 +42,7 @@ func dbsUnmarshal(data []byte) []utils.Record {
 	return out
 }
 
-// helper function to retrieve list of blocks for a given dataset
+// Blocks function retrieves list of blocks for a given dataset
 func Blocks(dataset string) []string {
 	rurl := fmt.Sprintf("%s/blocks?dataset=%s", dbsUrl(), url.PathEscape(dataset))
 	resp := utils.FetchResponse(rurl, "")
@@ -53,6 +53,33 @@ func Blocks(dataset string) []string {
 	for _, rec := range dbsUnmarshal(resp.Data) {
 		blk := rec["block_name"].(string)
 		out = append(out, blk)
+	}
+	return out
+}
+
+// ParentBlocks function retrieves block parents for given list of blocks
+func ParentBlocks(blocks []string) []string {
+	var requests []Request
+	// TODO: DBS provides blockparents GET API and blockparents POST API
+	// it is unclear which API to use here
+	for _, block := range blocks {
+		rurl := fmt.Sprintf("%s/blockparents?block_name=%s", dbsUrl(), url.PathEscape(block))
+		req := Request{Name: block, Url: rurl, Args: ""}
+		requests = append(requests, req)
+	}
+	var out []string
+	for _, rec := range Process(requests) { // key here is index, rec = {ReqName: []Records}
+		for _, row := range rec { // key here is block request.Name
+			switch r := row.(type) {
+			case []utils.Record:
+				for _, vvv := range r {
+					switch val := vvv["parent_block_name"].(type) {
+					case string:
+						out = append(out, val)
+					}
+				}
+			}
+		}
 	}
 	return out
 }
