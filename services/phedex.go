@@ -7,6 +7,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/vkuznet/WorkQueue/utils"
 )
@@ -35,10 +37,37 @@ func loadPhedexData(data []byte) []utils.Record {
 
 // PhedexUnmarshal unmarshals Phedex data stream and return DAS records based on api
 func phedexUnmarshal(data []byte) []utils.Record {
-	var out []utils.Record
-	records := loadPhedexData(data)
-	for _, rec := range records {
-		out = append(out, rec)
+	return loadPhedexData(data)
+}
+
+// Sites look-ups site names for given input (dataset or block)
+func Sites(input string) []string {
+	rurl := fmt.Sprintf("%s/blockReplicas?dataset=%s", phedexUrl(), url.PathEscape(input))
+	if strings.Contains(input, "#") {
+		rurl = fmt.Sprintf("%s/blockReplicas?block=%s", phedexUrl(), url.PathEscape(input))
 	}
-	return out
+	resp := utils.FetchResponse(rurl, "")
+	if resp.Error != nil {
+		fmt.Println(resp.Error)
+	}
+	var out []string
+	for _, rec := range phedexUnmarshal(resp.Data) {
+		if rec["phedex"] != nil {
+			val := rec["phedex"].(map[string]interface{})
+			blocks := val["block"].([]interface{})
+			for _, item := range blocks {
+				brec := item.(map[string]interface{})
+				replicas := brec["replica"].([]interface{})
+				for _, val := range replicas {
+					row := val.(map[string]interface{})
+					node := ""
+					if row["node"] != nil {
+						node = row["node"].(string)
+						out = append(out, node)
+					}
+				}
+			}
+		}
+	}
+	return utils.List2Set(out)
 }

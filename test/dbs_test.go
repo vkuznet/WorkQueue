@@ -48,3 +48,18 @@ func TestDataset(t *testing.T) {
 		fmt.Println("Number of lumis", r.NumberOfLumis())
 	}
 }
+
+// TestSites is an integration test to fetch sites for given dataset or block
+func TestSites(t *testing.T) {
+	dataset := "/WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/RunIISummer15GS-MCRUN2_71_V1_ext2-v1/GEN-SIM"
+	sites := services.Sites(dataset)
+	fmt.Println(sites)
+	blocks := services.Blocks(dataset)
+	for idx, block := range blocks {
+		sites := services.Sites(block)
+		fmt.Println(block, sites)
+		if idx == 2 {
+			break
+		}
+	}
+}
