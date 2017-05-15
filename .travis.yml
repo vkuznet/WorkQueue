@@ -9,3 +9,4 @@ install:
   - go get github.com/rcrowley/go-metrics
   - go get github.com/zemirco/couchdb
   - go get github.com/segmentio/pointer
+  - go get github.com/sirupsen/logrus
