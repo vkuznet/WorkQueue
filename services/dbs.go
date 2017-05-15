@@ -68,6 +68,11 @@ func (r RunLumis) String() string {
 	return fmt.Sprintf("{Run: %d, Lumis: %v}", r.Run, r.Lumis)
 }
 
+// NumberOfLumis returns number of lumis in FileLumis
+func (r RunLumis) NumberOfLumis() int {
+	return len(r.Lumis)
+}
+
 // FileLumis keep track of block content
 type FileLumis struct {
 	Lfn      string
@@ -79,6 +84,11 @@ func (r FileLumis) String() string {
 	return fmt.Sprintf("{Lfn: %s, RunLumis: %v}", r.Lfn, r.RunLumis)
 }
 
+// NumberOfLumis returns number of lumis in FileLumis
+func (r FileLumis) NumberOfLumis() int {
+	return r.RunLumis.NumberOfLumis()
+}
+
 // MaskedBlock represents block record with list of fileLumis
 type MaskedBlock struct {
 	Block      string
@@ -88,6 +98,20 @@ type MaskedBlock struct {
 // String implements Stringer interface
 func (r MaskedBlock) String() string {
 	return fmt.Sprintf("{Block: %s, FilesLumis: %v}", r.Block, r.FilesLumis)
+}
+
+// NumberOfFiles returns number of files in MaskedBlock
+func (r MaskedBlock) NumberOfFiles() int {
+	return len(r.FilesLumis)
+}
+
+// NumberOfLumis returns number of lumis in MaskedBlock
+func (r MaskedBlock) NumberOfLumis() int {
+	tot := 0
+	for _, fileLumis := range r.FilesLumis {
+		tot += fileLumis.NumberOfLumis()
+	}
+	return tot
 }
 
 // MaskedBlocks returns record of block details mased by provided lumis
