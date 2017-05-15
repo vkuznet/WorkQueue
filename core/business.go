@@ -5,7 +5,7 @@ package core
 
 import (
 	"fmt"
-	"log"
+	"log" // keep standard log here since we used it in metrics, do not use logrus
 	"os"
 	"time"
 

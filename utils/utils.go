@@ -10,13 +10,14 @@ import (
 	"fmt"
 	"hash/adler32"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"os/user"
 	"path/filepath"
 	"runtime"
 	"text/template"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // STATICDIR defines location of all static files

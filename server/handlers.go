@@ -6,11 +6,12 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/segmentio/pointer"
 	"github.com/vkuznet/WorkQueue/core"

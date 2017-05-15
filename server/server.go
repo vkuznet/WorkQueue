@@ -6,9 +6,10 @@ package server
 import (
 	"crypto/tls"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/vkuznet/WorkQueue/core"
 	"github.com/zemirco/couchdb"
@@ -30,11 +31,13 @@ type Config struct {
 	Base            string `json:"base"`            // URL base path for agent server, it will be extracted from Url
 	ServerKey       string `json:"serverkey"`       // server key file
 	ServerCrt       string `json:"servercrt"`       // server crt file
+	LogFormatter    string `json:"LogFormatter"`    // LogFormatter, e.g. json
+	LogLevel        string `json:"LogLevel"`        // Log level, e.g. info, warn, err
 }
 
 // String returns string representation of Config data type
 func (c *Config) String() string {
-	return fmt.Sprintf("<Config: Workers=%d QueueSize=%d MetricsFile=%s MetricsInterval=%d RequestType=%s FetchInterval=%d CouchUrl=%s Port=%d Base=%s>", c.Workers, c.QueueSize, c.MetricsFile, c.MetricsInterval, c.RequestType, c.FetchInterval, c.CouchUrl, c.Port, c.Base)
+	return fmt.Sprintf("{Config: Workers=%d QueueSize=%d MetricsFile=%s MetricsInterval=%d RequestType=%s FetchInterval=%d CouchUrl=%s Port=%d Base=%s}", c.Workers, c.QueueSize, c.MetricsFile, c.MetricsInterval, c.RequestType, c.FetchInterval, c.CouchUrl, c.Port, c.Base)
 }
 
 // globals used in server/handlers

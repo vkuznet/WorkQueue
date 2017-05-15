@@ -64,8 +64,8 @@ type RunLumis struct {
 }
 
 // String implements Stringer interface
-func (r *RunLumis) String() string {
-	return fmt.Sprintf("<Run: %d, Lumis: %v>", r.Run, r.Lumis)
+func (r RunLumis) String() string {
+	return fmt.Sprintf("{Run: %d, Lumis: %v}", r.Run, r.Lumis)
 }
 
 // FileLumis keep track of block content
@@ -75,8 +75,8 @@ type FileLumis struct {
 }
 
 // String implements Stringer interface
-func (r *FileLumis) String() string {
-	return fmt.Sprintf("<Lfn: %s, RunLumis: %v>", r.Lfn, r.RunLumis)
+func (r FileLumis) String() string {
+	return fmt.Sprintf("{Lfn: %s, RunLumis: %v}", r.Lfn, r.RunLumis)
 }
 
 // MaskedBlock represents block record with list of fileLumis
@@ -86,8 +86,8 @@ type MaskedBlock struct {
 }
 
 // String implements Stringer interface
-func (r *MaskedBlock) String() string {
-	return fmt.Sprintf("<Block: %s, FilesLumis: %v>", r.Block, r.FilesLumis)
+func (r MaskedBlock) String() string {
+	return fmt.Sprintf("{Block: %s, FilesLumis: %v}", r.Block, r.FilesLumis)
 }
 
 // MaskedBlocks returns record of block details mased by provided lumis
