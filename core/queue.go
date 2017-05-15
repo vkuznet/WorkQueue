@@ -35,20 +35,8 @@ type WorkQueueElement struct {
 	FilesProcessed  int
 }
 
-// BlockPolicy defines block policy
-type BlockPolicy struct {
-	Name              string
-	WorkQueueElements []WorkQueueElement
-}
-
-// DatasetPolicy defines dataset policy
-type DatasetPolicy struct {
-	Name              string
-	WorkQueueElements []WorkQueueElement
-}
-
-// MonteCarloPolicy defines MC policy
-type MonteCarloPolicy struct {
-	Name              string
-	WorkQueueElements []WorkQueueElement
+// Policy interface defines policy methods
+type Policy interface {
+	Split() []WorkQueueElement
+	Validate() bool
 }
