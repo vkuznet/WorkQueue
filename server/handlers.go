@@ -149,7 +149,8 @@ func RequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// get requests for given type
 	rtype := r.FormValue("type")
-	requests := core.GetRequests(rtype)
+	rurl := _config.ReqMgrURL
+	requests := core.GetRequests(rurl, rtype)
 	data, err := json.Marshal(requests)
 	if err != nil {
 		log.Println("ERROR StatusHandler", err)

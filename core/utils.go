@@ -93,8 +93,8 @@ func loadReqMgr2Data(data []byte) []Record {
 }
 
 // GetRequests function fetches requests from ReqMgr2 data service
-func GetRequests(status string) []Record {
-	rurl := fmt.Sprintf("https://cmsweb.cern.ch/reqmgr2/data/request?status=%s", status)
+func GetRequests(requrl, status string) []Record {
+	rurl := fmt.Sprintf("%s/data/request?status=%s", requrl, status)
 	resp := utils.FetchResponse(rurl, "")
 	data := loadReqMgr2Data(resp.Data)
 	return data
@@ -120,6 +120,63 @@ func parseRequest(record Record) []Record {
 			r["workflow"] = workflow
 			r["teams"] = teams
 			out = append(out, r)
+		}
+	}
+	return out
+}
+
+// helper function to parse ReqMgr2 record
+// the code may likely to change, since I don't know yet which attributes of
+// ReqMgr2 record will be necessary for WorkQueue
+func request2WQE(record Record) []WorkQueueElement {
+	var out []WorkQueueElement
+	var inputBlocks, parentData, pileupData map[string][]string
+	var numberOfLumis, numberOfFiles, numberOfEvents, jobs, blowupFactor, priority, filesProcessed int
+	var parentFlag, openForNewData, noInputUpdate, noPileupUpdate bool
+	var mask map[string]int
+	var acdc, task, requestName, taskName, dbs, wmSpec, parentQueueUrl, childQueueUrl, wmbsUrl string
+	var siteWhiteList, siteBlackList []string
+	var percentSuccess, percentComplete float32
+	for _, val := range record {
+		switch rec := val.(type) {
+		case map[string]interface{}:
+			requestName, _ = rec["RequestName"].(string)
+			taskName = requestName
+			dbs, _ = rec["DbsUrl"].(string)
+			siteWhiteList, _ = rec["siteWhitelist"].([]string)
+			siteBlackList, _ = rec["whiteBlacklist"].([]string)
+			priority, _ = rec["InitialPriority"].(int)
+			wqe := WorkQueueElement{
+				Inputs:          inputBlocks,
+				ParentFlag:      parentFlag,
+				ParentData:      parentData,
+				PileupData:      pileupData,
+				NumberOfLumis:   numberOfLumis,
+				NumberOfFiles:   numberOfFiles,
+				NumberOfEvents:  numberOfEvents,
+				Jobs:            jobs,
+				OpenForNewData:  openForNewData,
+				NoInputUpdate:   noInputUpdate,
+				NoPileupUpdate:  noPileupUpdate,
+				WMSpec:          wmSpec,
+				Mask:            mask,
+				BlowupFactor:    blowupFactor,
+				ACDC:            acdc,
+				Dbs:             dbs,
+				TaskName:        taskName,
+				Task:            task,
+				RequestName:     requestName,
+				SiteWhiteList:   siteWhiteList,
+				SiteBlackList:   siteBlackList,
+				Priority:        priority,
+				ParentQueueUrl:  parentQueueUrl,
+				ChildQueueUrl:   childQueueUrl,
+				PercentSuccess:  percentSuccess,
+				PercentComplete: percentComplete,
+				WMBSUrl:         wmbsUrl,
+				FilesProcessed:  filesProcessed,
+			}
+			out = append(out, wqe)
 		}
 	}
 	return out

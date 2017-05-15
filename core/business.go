@@ -12,18 +12,6 @@ import (
 	"github.com/rcrowley/go-metrics"
 )
 
-// Policy defines request policy
-type Policy struct {
-	Name string
-}
-
-// WorkQueueElement is an element which we operate in WorkQueue
-type WorkQueueElement struct {
-	RequestName string
-	Status      string
-	StartPolicy Policy
-}
-
 // Job represents the job to be run with given request
 type Job struct {
 	Request Record
@@ -113,20 +101,20 @@ func NewDispatcher(maxWorkers, maxQueue int, mfile string, minterval int64) *Dis
 }
 
 // Run function starts the worker and dispatch it as go-routine
-func (d *Dispatcher) Run(rtype string, interval int64) {
+func (d *Dispatcher) Run(rurl, rtype string, interval int64) {
 	// starting n number of workers
 	for i := 0; i < d.MaxWorkers; i++ {
 		worker := NewWorker(i, d.JobPool)
 		worker.Start()
 	}
 	// spawn new go-routine to dispatch
-	go d.dispatch(rtype, interval)
+	go d.dispatch(rurl, rtype, interval)
 }
 
-func (d *Dispatcher) dispatch(rtype string, interval int64) {
+func (d *Dispatcher) dispatch(rurl, rtype string, interval int64) {
 	for {
 		// fetch new set of requests from ReqMgr2
-		requests := GetRequests(rtype)
+		requests := GetRequests(rurl, rtype)
 		for _, req := range requests {
 			// submit request to processing chain
 			go func(req Record) {
