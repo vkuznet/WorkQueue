@@ -1,5 +1,11 @@
 package core
 
+import (
+	"encoding/json"
+
+	log "github.com/sirupsen/logrus"
+)
+
 // WorkQueue Queue implementation
 // Copyright (c) 2017 - Valentin Kuznetsov <vkuznet@gmail.com>
 
@@ -39,4 +45,13 @@ type WorkQueueElement struct {
 type Policy interface {
 	Split() []WorkQueueElement
 	Validate() bool
+}
+
+// String function implements Stringer interface
+func (w WorkQueueElement) String() string {
+	rec, err := json.Marshal(w)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(rec)
 }
