@@ -125,7 +125,8 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	params := couchdb.QueryParameters{
 		Group: pointer.Bool(true),
 	}
-	res, err := core.VIEW.Get("elementsByWorkflow", params)
+	view := core.DB.View("WorkQueue")
+	res, err := view.Get("elementsByWorkflow", params)
 	if err != nil {
 		panic(err)
 	}

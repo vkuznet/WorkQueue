@@ -13,6 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/vkuznet/WorkQueue/services"
 	"github.com/vkuznet/WorkQueue/utils"
+	"github.com/zemirco/couchdb"
 )
 
 // Job represents the job to be run with given request
@@ -134,7 +135,8 @@ func (d *Dispatcher) dispatch(rtype string, interval int64) {
 func Process(record utils.Record) {
 	fmt.Println("### Request", record)
 
-	var out []WorkQueueElement
+	//     var out []WorkQueueElement
+	var out []couchdb.CouchDoc
 	var inputBlocks, parentData, pileupData map[string][]string
 	var numberOfLumis, numberOfFiles, numberOfEvents, jobs, blowupFactor, priority, filesProcessed int
 	var parentFlag, openForNewData, noInputUpdate, noPileupUpdate bool
@@ -167,7 +169,7 @@ func Process(record utils.Record) {
 			inputBlocks = services.Blocks2Sites(mblocks)
 			parentData = services.Blocks2Sites(services.ParentBlocks(mblocks))
 
-			wqe := WorkQueueElement{
+			wqe := &WorkQueueElement{
 				Inputs:          inputBlocks,
 				ParentFlag:      parentFlag,
 				ParentData:      parentData,
@@ -205,4 +207,11 @@ func Process(record utils.Record) {
 		fmt.Println(rec)
 	}
 	// insert WorkQueueElement records into CouchDB
+	resp, err := DB.Bulk(out)
+	if err != nil {
+		logrus.Warn("Insert error: ", err, resp)
+	}
+	if utils.VERBOSE > 0 {
+		logrus.Info("Insert response: ", resp)
+	}
 }

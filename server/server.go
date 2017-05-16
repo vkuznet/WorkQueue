@@ -7,12 +7,10 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/vkuznet/WorkQueue/core"
-	"github.com/zemirco/couchdb"
 
 	// web profiler, see https://golang.org/pkg/net/http/pprof
 	_ "net/http/pprof"
@@ -27,6 +25,7 @@ type Config struct {
 	RequestType     string `json:"RequestType"`     // ReqMgr2 type of request to fetch
 	FetchInterval   int64  `json:"FetchInterval"`   // interval (in sec) to fetch ReqMgr2 data
 	CouchUrl        string `json:"CouchURL"`        // couch db url
+	DBName          string `json:"DBName"`          // database name to use
 	Port            int    `json:"port"`            // port number given server runs on, default 8989
 	Base            string `json:"base"`            // URL base path for agent server, it will be extracted from Url
 	ServerKey       string `json:"serverkey"`       // server key file
@@ -46,31 +45,11 @@ var _config Config
 // Server implementation
 func Server(config Config) {
 	_config = config
-
-	// open up Catalog DB
-	u, err := url.Parse(config.CouchUrl)
-	if err != nil {
-		panic(err)
+	dbName := "workqueue"
+	if _config.DBName != "" {
+		dbName = _config.DBName
 	}
-	// create a new client
-	client, err := couchdb.NewClient(u)
-	if err != nil {
-		panic(err)
-	}
-
-	log.Println("CouchURL", config.CouchUrl)
-
-	// get some information about your CouchDB
-	info, err := client.Info()
-	if err != nil {
-		panic(err)
-	}
-	log.Println(info)
-
-	db := client.Use("workqueue")
-	view := db.View("WorkQueue")
-	core.DB = db
-	core.VIEW = view
+	core.InitCouch(_config.CouchUrl, dbName)
 
 	port := "8989" // default port, the port here is a string type since we'll use it later in http.ListenAndServe
 	if config.Port != 0 {
@@ -85,6 +64,7 @@ func Server(config Config) {
 	dispatcher := core.NewDispatcher(config.Workers, config.QueueSize, config.MetricsFile, config.MetricsInterval)
 	dispatcher.Run(config.RequestType, config.FetchInterval)
 
+	var err error
 	if authVar {
 		//start HTTPS server which require user certificates
 		server := &http.Server{

@@ -24,5 +24,16 @@ func TestCoreProcess(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unable to unmarshall data %v", string(c))
 	}
+	dbName := "dummy"
+	core.InitCouch("http://127.0.0.1:5984", dbName)
+	// create a database
+	if _, err = core.Client.Create(dbName); err != nil {
+		panic(err)
+	}
+	utils.VERBOSE = 1
 	core.Process(record)
+	// and finally delete the database
+	if _, err = core.Client.Delete(dbName); err != nil {
+		panic(err)
+	}
 }

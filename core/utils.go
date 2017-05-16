@@ -5,16 +5,19 @@ package core
 
 import (
 	"fmt"
+	"net/url"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/rcrowley/go-metrics"
 	"github.com/zemirco/couchdb"
 )
 
+// Client points to CouchDB client
+var Client *couchdb.Client
+
 // DB points to CouchDB
 var DB couchdb.DatabaseService
-
-// VIEW represents CouchDB view
-var VIEW couchdb.ViewService
 
 // Metrics of the agent
 type Metrics struct {
@@ -44,4 +47,29 @@ func (m *Metrics) ToDict() map[string]int64 {
 		dict["jobs"] = m.Jobs.Count()
 	}
 	return dict
+}
+
+// InitCouch initializes connection to CouchDB
+func InitCouch(couchUrl, dbName string) {
+	// open up Catalog DB
+	u, err := url.Parse(couchUrl)
+	if err != nil {
+		panic(err)
+	}
+
+	// create a new client
+	client, err := couchdb.NewClient(u)
+	if err != nil {
+		panic(err)
+	}
+	Client = client
+
+	// get some information about your CouchDB
+	info, err := client.Info()
+	if err != nil {
+		panic(err)
+	}
+	log.Println(info)
+
+	DB = client.Use(dbName)
 }

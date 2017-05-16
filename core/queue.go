@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/zemirco/couchdb"
 )
 
 // WorkQueue Queue implementation
@@ -11,6 +12,7 @@ import (
 
 // WorkQueueElement structure
 type WorkQueueElement struct {
+	couchdb.Document
 	Inputs          map[string][]string // {blockName:sites}
 	ParentData      map[string][]string // {blockName:sites}
 	PileupData      map[string][]string // {blockName:sites}
