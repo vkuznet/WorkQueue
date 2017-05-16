@@ -59,8 +59,9 @@ func Blocks(dataset string) []string {
 
 // RunLumis keep track of run-lumis
 type RunLumis struct {
-	Run   int64
-	Lumis []int64
+	Run    int64
+	Lumis  []int64
+	Events []int64
 }
 
 // String implements Stringer interface
@@ -68,9 +69,14 @@ func (r RunLumis) String() string {
 	return fmt.Sprintf("{Run: %d, Lumis: %v}", r.Run, r.Lumis)
 }
 
-// NumberOfLumis returns number of lumis in FileLumis
+// NumberOfLumis returns number of lumis in RunLumis
 func (r RunLumis) NumberOfLumis() int {
 	return len(r.Lumis)
+}
+
+// NumberOfEvents returns number of lumis in RunLumis
+func (r RunLumis) NumberOfEvents() int {
+	return len(r.Events)
 }
 
 // FileLumis keep track of block content
@@ -87,6 +93,11 @@ func (r FileLumis) String() string {
 // NumberOfLumis returns number of lumis in FileLumis
 func (r FileLumis) NumberOfLumis() int {
 	return r.RunLumis.NumberOfLumis()
+}
+
+// NumberOfEvents returns number of lumis in FileEvents
+func (r FileLumis) NumberOfEvents() int {
+	return r.RunLumis.NumberOfEvents()
 }
 
 // MaskedBlock represents block record with list of fileLumis
@@ -114,6 +125,38 @@ func (r MaskedBlock) NumberOfLumis() int {
 	return tot
 }
 
+// NumberOfEvents returns number of lumis in MaskedBlock
+func (r MaskedBlock) NumberOfEvents() int {
+	tot := 0
+	for _, fileLumis := range r.FilesLumis {
+		tot += fileLumis.NumberOfEvents()
+	}
+	return tot
+}
+
+// helper function to fetch event info for blocks
+func blockEvents(blocks []string) map[string]int64 {
+	var requests []Request
+	for _, block := range blocks {
+		rurl := fmt.Sprintf("%s/filesummaries?block_name=%s", dbsUrl(), url.PathEscape(block))
+		req := Request{Name: block, Url: rurl, Args: ""}
+		requests = append(requests, req)
+	}
+	blockInfo := make(map[string]int64)
+	for _, rec := range Process(requests) { // key here is index, rec = {ReqName: []Records}
+		for block, row := range rec { // key here is block request.Name
+			switch r := row.(type) {
+			case []utils.Record:
+				for _, vvv := range r {
+					evts, _ := vvv["num_event"].(json.Number).Int64()
+					blockInfo[block] = evts
+				}
+			}
+		}
+	}
+	return blockInfo
+}
+
 // MaskedBlocks returns record of block details mased by provided lumis
 func MaskedBlocks(blocks []string) []MaskedBlock {
 	var requests []Request
@@ -123,6 +166,7 @@ func MaskedBlocks(blocks []string) []MaskedBlock {
 		requests = append(requests, req)
 	}
 	var out []MaskedBlock
+	var blockInfo map[string]int64
 	for _, rec := range Process(requests) { // key here is index, rec = {ReqName: []Records}
 		for block, row := range rec { // key here is block request.Name
 			switch r := row.(type) {
@@ -136,7 +180,21 @@ func MaskedBlocks(blocks []string) []MaskedBlock {
 						lumiNumber, _ := v.(json.Number).Int64()
 						lumis = append(lumis, lumiNumber)
 					}
-					runLumis := RunLumis{Run: run, Lumis: lumis}
+					var events []int64
+					if _, ok := vvv["event_count"]; ok {
+						for _, v := range vvv["event_count"].([]interface{}) {
+							event, _ := v.(json.Number).Int64()
+							events = append(events, event)
+						}
+					} else { // back-up solution
+						if blockInfo == nil { // first fatch all info about blocks
+							blockInfo = blockEvents(blocks)
+						}
+						if evts, ok := blockInfo[block]; ok {
+							events = append(events, evts)
+						}
+					}
+					runLumis := RunLumis{Run: run, Lumis: lumis, Events: events}
 					fileLumis := FileLumis{Lfn: lfn, RunLumis: runLumis}
 					filesLumis = append(filesLumis, fileLumis)
 				}
