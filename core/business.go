@@ -153,7 +153,7 @@ func Process(record utils.Record) {
 			dbs, _ = rec["DbsUrl"].(string)
 			siteWhiteList, _ = rec["siteWhitelist"].([]string)
 			siteBlackList, _ = rec["whiteBlacklist"].([]string)
-			priority, _ = rec["InitialPriority"].(int)
+			priority, _ = rec["RequestPriority"].(int)
 			inputDataset, _ := rec["InputDataset"].(string)
 			blocks := services.Blocks(inputDataset)
 			maskedBlocks := services.MaskedBlocks(blocks)
@@ -161,6 +161,7 @@ func Process(record utils.Record) {
 			for _, mb := range maskedBlocks {
 				numberOfLumis += mb.NumberOfLumis()
 				numberOfFiles += mb.NumberOfFiles()
+				numberOfEvents += mb.NumberOfEvents()
 				mblocks = append(mblocks, mb.Block)
 			}
 			inputBlocks = services.Blocks2Sites(mblocks)
