@@ -40,18 +40,10 @@ func phedexUnmarshal(data []byte) []utils.Record {
 	return loadPhedexData(data)
 }
 
-// Sites look-ups site names for given input (dataset or block)
-func Sites(input string) []string {
-	rurl := fmt.Sprintf("%s/blockReplicas?dataset=%s", phedexUrl(), url.PathEscape(input))
-	if strings.Contains(input, "#") {
-		rurl = fmt.Sprintf("%s/blockReplicas?block=%s", phedexUrl(), url.PathEscape(input))
-	}
-	resp := utils.FetchResponse(rurl, "")
-	if resp.Error != nil {
-		fmt.Println(resp.Error)
-	}
+// helper function to extract phedex node from phedex response record
+func phedexNode(data []byte) []string {
 	var out []string
-	for _, rec := range phedexUnmarshal(resp.Data) {
+	for _, rec := range phedexUnmarshal(data) {
 		if rec["phedex"] != nil {
 			val := rec["phedex"].(map[string]interface{})
 			blocks := val["block"].([]interface{})
@@ -70,4 +62,44 @@ func Sites(input string) []string {
 		}
 	}
 	return utils.List2Set(out)
+}
+
+// Sites look-ups site names for given input (dataset or block)
+func Sites(input string) []string {
+	rurl := fmt.Sprintf("%s/blockReplicas?dataset=%s", phedexUrl(), url.PathEscape(input))
+	if strings.Contains(input, "#") {
+		rurl = fmt.Sprintf("%s/blockReplicas?block=%s", phedexUrl(), url.PathEscape(input))
+	}
+	resp := utils.FetchResponse(rurl, "")
+	if resp.Error != nil {
+		fmt.Println(resp.Error)
+	}
+	return phedexNode(resp.Data)
+}
+
+// Blocks2Sites fetches site lists for given list of blocks
+func Blocks2Sites(blocks []string) map[string][]string {
+	var requests []Request
+	for _, block := range blocks {
+		rurl := fmt.Sprintf("%s/blockReplicas?block=%s", phedexUrl(), url.PathEscape(block))
+		req := Request{Name: block, Url: rurl, Args: ""}
+		requests = append(requests, req)
+	}
+	bSites := make(map[string][]string)
+	for _, rec := range Process(requests) { // key here is index, rec = {ReqName: []Records}
+		for block, row := range rec { // key here is block (Request.Name)
+			switch r := row.(type) {
+			case []utils.Record:
+				var sites []string
+				for _, phedexRecord := range r {
+					data, _ := json.Marshal(phedexRecord)
+					for _, node := range phedexNode([]byte(data)) {
+						sites = append(sites, node)
+					}
+				}
+				bSites[block] = sites
+			}
+		}
+	}
+	return bSites
 }
