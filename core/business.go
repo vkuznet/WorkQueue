@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/rcrowley/go-metrics"
+	"github.com/sirupsen/logrus"
 	"github.com/vkuznet/WorkQueue/services"
 	"github.com/vkuznet/WorkQueue/utils"
 )
@@ -60,11 +61,8 @@ func (w Worker) Start() {
 				// Increment number of running jobs
 				WorkqueueMetrics.Jobs.Inc(1)
 
-				//                 log.Println("job", job)
-
 				// perform some work with a job
-				rec := parseRequest(job.Request)
-				fmt.Println("### Request", rec)
+				Process(job.Request)
 
 			case <-w.quit:
 				// we have received a signal to stop
@@ -130,4 +128,80 @@ func (d *Dispatcher) dispatch(rtype string, interval int64) {
 		}
 		time.Sleep(time.Duration(interval) * time.Second) // wait for a job
 	}
+}
+
+// Process given request
+func Process(record utils.Record) {
+	fmt.Println("### Request", record)
+
+	var out []WorkQueueElement
+	var inputBlocks, parentData, pileupData map[string][]string
+	var numberOfLumis, numberOfFiles, numberOfEvents, jobs, blowupFactor, priority, filesProcessed int
+	var parentFlag, openForNewData, noInputUpdate, noPileupUpdate bool
+	var mask map[string]int
+	var acdc, task, requestName, taskName, dbs, wmSpec, parentQueueUrl, childQueueUrl, wmbsUrl string
+	var siteWhiteList, siteBlackList []string
+	var percentSuccess, percentComplete float32
+	for rname, spec := range record { // reqMgr2 record is {request_name: request_spec}
+		switch rec := spec.(type) {
+		case map[string]interface{}:
+			requestName, _ = rec["RequestName"].(string)
+			if rname != requestName {
+				logrus.Warn("ReqMgr2 rname=%s != RequestName=%s", rname, requestName)
+			}
+			taskName = requestName
+			dbs, _ = rec["DbsUrl"].(string)
+			siteWhiteList, _ = rec["siteWhitelist"].([]string)
+			siteBlackList, _ = rec["whiteBlacklist"].([]string)
+			priority, _ = rec["InitialPriority"].(int)
+			inputDataset, _ := rec["InputDataset"].(string)
+			blocks := services.Blocks(inputDataset)
+			maskedBlocks := services.MaskedBlocks(blocks)
+			var mblocks []string
+			for _, mb := range maskedBlocks {
+				numberOfLumis += mb.NumberOfLumis()
+				numberOfFiles += mb.NumberOfFiles()
+				mblocks = append(mblocks, mb.Block)
+			}
+			inputBlocks = services.Blocks2Sites(mblocks)
+			parentData = services.Blocks2Sites(services.ParentBlocks(mblocks))
+
+			wqe := WorkQueueElement{
+				Inputs:          inputBlocks,
+				ParentFlag:      parentFlag,
+				ParentData:      parentData,
+				PileupData:      pileupData,
+				NumberOfLumis:   numberOfLumis,
+				NumberOfFiles:   numberOfFiles,
+				NumberOfEvents:  numberOfEvents,
+				Jobs:            jobs,
+				OpenForNewData:  openForNewData,
+				NoInputUpdate:   noInputUpdate,
+				NoPileupUpdate:  noPileupUpdate,
+				WMSpec:          wmSpec,
+				Mask:            mask,
+				BlowupFactor:    blowupFactor,
+				ACDC:            acdc,
+				Dbs:             dbs,
+				TaskName:        taskName,
+				Task:            task,
+				RequestName:     requestName,
+				SiteWhiteList:   siteWhiteList,
+				SiteBlackList:   siteBlackList,
+				Priority:        priority,
+				ParentQueueUrl:  parentQueueUrl,
+				ChildQueueUrl:   childQueueUrl,
+				PercentSuccess:  percentSuccess,
+				PercentComplete: percentComplete,
+				WMBSUrl:         wmbsUrl,
+				FilesProcessed:  filesProcessed,
+			}
+			out = append(out, wqe)
+		}
+	}
+	fmt.Println("### WorkQueueElements ###")
+	for _, rec := range out {
+		fmt.Println(rec)
+	}
+	// insert WorkQueueElement records into CouchDB
 }
