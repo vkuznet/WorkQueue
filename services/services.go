@@ -20,7 +20,7 @@ func sitedbUrl() string {
 	return "https://cmsweb.cern.ch/sitedb/data/prod"
 }
 func reqmgrUrl() string {
-	return "https://cmsweb.cern.ch/reqmgr2/data"
+	return "https://cmsweb.cern.ch/reqmgr2"
 }
 
 // Unmarshal

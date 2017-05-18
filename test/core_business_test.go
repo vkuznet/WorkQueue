@@ -31,8 +31,9 @@ func TestCoreProcess(t *testing.T) {
 	if _, err = core.Client.Create(dbName); err != nil {
 		if strings.Contains(err.Error(), "exists") {
 			fmt.Println(err)
+		} else {
+			panic(err)
 		}
-		panic(err)
 	}
 	utils.VERBOSE = 1
 	core.Process(record)

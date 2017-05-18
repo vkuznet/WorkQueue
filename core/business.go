@@ -135,12 +135,16 @@ func (d *Dispatcher) dispatch(rtype string, interval int64) {
 // Process given request
 func Process(record utils.Record) {
 	var out []couchdb.CouchDoc
-	switch rType := requestType(record); rType {
+	reqConfig := requestConfig(record)
+	fmt.Println("### CONFIG", reqConfig)
+	rType := requestType(reqConfig)
+	fmt.Println("### RequestType", rType)
+	switch rType {
 	case "MonteCarlo":
-		policy := MonteCarloPolicy{Name: "Block", Record: record}
+		policy := MonteCarloPolicy{Name: "MonteCarlo", Record: record}
 		out = policy.Split()
 	case "ResubmitBlock":
-		policy := ResubmitBlockPolicy{Name: "Block", Record: record}
+		policy := ResubmitBlockPolicy{Name: "ResubmitBlock", Record: record}
 		out = policy.Split()
 	default:
 		policy := BlockPolicy{Name: "Block", Record: record}
@@ -163,17 +167,21 @@ func Process(record utils.Record) {
 	}
 }
 
+// helper function to get request config from record name
+func requestConfig(record utils.Record) utils.Record {
+	var name string
+	for rname, _ := range record {
+		name = rname
+		break
+	}
+	return services.RequestConfig(name)
+}
+
 // helper function which returns request type from given record
-// TODO: I don't know yet full logic how to get request type, awaiting answer from
-//       Seangchan and Alan.
-func requestType(record utils.Record) string {
-	if val, ok := record["RequestType"]; ok {
-		r := val.(string)
-		if strings.Contains(r, "MonteCarlo") {
-			return "MonteCarlo"
-		}
-		if strings.Contains(r, "ResubmitBlock") {
-			return "ResubmitBlock"
+func requestType(config utils.Record) string {
+	for key, val := range config {
+		if strings.Contains(key, "requestType") {
+			return val.(string)
 		}
 	}
 	return "Block"
