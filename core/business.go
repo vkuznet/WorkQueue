@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log" // keep standard log here since we used it in metrics, do not use logrus
 	"os"
+	"strings"
 	"time"
 
 	"github.com/rcrowley/go-metrics"
@@ -55,16 +56,16 @@ func (w Worker) Start() {
 		for {
 			// register the current worker into the worker queue.
 			w.JobPool <- w.JobChannel
-
 			select {
 			case job := <-w.JobChannel:
-
 				// Increment number of running jobs
 				WorkqueueMetrics.Jobs.Inc(1)
 
 				// perform some work with a job
 				Process(job.Request)
 
+				// Decrement number of running jobs
+				WorkqueueMetrics.Jobs.Dec(1)
 			case <-w.quit:
 				// we have received a signal to stop
 				return
@@ -133,78 +134,24 @@ func (d *Dispatcher) dispatch(rtype string, interval int64) {
 
 // Process given request
 func Process(record utils.Record) {
-	fmt.Println("### Request", record)
-
-	//     var out []WorkQueueElement
 	var out []couchdb.CouchDoc
-	var inputBlocks, parentData, pileupData map[string][]string
-	var numberOfLumis, numberOfFiles, numberOfEvents, jobs, blowupFactor, priority, filesProcessed int
-	var parentFlag, openForNewData, noInputUpdate, noPileupUpdate bool
-	var mask map[string]int
-	var acdc, task, requestName, taskName, dbs, wmSpec, parentQueueUrl, childQueueUrl, wmbsUrl string
-	var siteWhiteList, siteBlackList []string
-	var percentSuccess, percentComplete float32
-	for rname, spec := range record { // reqMgr2 record is {request_name: request_spec}
-		switch rec := spec.(type) {
-		case map[string]interface{}:
-			requestName, _ = rec["RequestName"].(string)
-			if rname != requestName {
-				logrus.Warn("ReqMgr2 rname=%s != RequestName=%s", rname, requestName)
-			}
-			taskName = requestName
-			dbs, _ = rec["DbsUrl"].(string)
-			siteWhiteList, _ = rec["siteWhitelist"].([]string)
-			siteBlackList, _ = rec["whiteBlacklist"].([]string)
-			priority, _ = rec["RequestPriority"].(int)
-			inputDataset, _ := rec["InputDataset"].(string)
-			blocks := services.Blocks(inputDataset)
-			maskedBlocks := services.MaskedBlocks(blocks)
-			var mblocks []string
-			for _, mb := range maskedBlocks {
-				numberOfLumis += mb.NumberOfLumis()
-				numberOfFiles += mb.NumberOfFiles()
-				numberOfEvents += mb.NumberOfEvents()
-				mblocks = append(mblocks, mb.Block)
-			}
-			inputBlocks = services.Blocks2Sites(mblocks)
-			parentData = services.Blocks2Sites(services.ParentBlocks(mblocks))
-
-			wqe := &WorkQueueElement{
-				Inputs:          inputBlocks,
-				ParentFlag:      parentFlag,
-				ParentData:      parentData,
-				PileupData:      pileupData,
-				NumberOfLumis:   numberOfLumis,
-				NumberOfFiles:   numberOfFiles,
-				NumberOfEvents:  numberOfEvents,
-				Jobs:            jobs,
-				OpenForNewData:  openForNewData,
-				NoInputUpdate:   noInputUpdate,
-				NoPileupUpdate:  noPileupUpdate,
-				WMSpec:          wmSpec,
-				Mask:            mask,
-				BlowupFactor:    blowupFactor,
-				ACDC:            acdc,
-				Dbs:             dbs,
-				TaskName:        taskName,
-				Task:            task,
-				RequestName:     requestName,
-				SiteWhiteList:   siteWhiteList,
-				SiteBlackList:   siteBlackList,
-				Priority:        priority,
-				ParentQueueUrl:  parentQueueUrl,
-				ChildQueueUrl:   childQueueUrl,
-				PercentSuccess:  percentSuccess,
-				PercentComplete: percentComplete,
-				WMBSUrl:         wmbsUrl,
-				FilesProcessed:  filesProcessed,
-			}
-			out = append(out, wqe)
-		}
+	switch rType := requestType(record); rType {
+	case "MonteCarlo":
+		policy := MonteCarloPolicy{Name: "Block", Record: record}
+		out = policy.Split()
+	case "ResubmitBlock":
+		policy := ResubmitBlockPolicy{Name: "Block", Record: record}
+		out = policy.Split()
+	default:
+		policy := BlockPolicy{Name: "Block", Record: record}
+		out = policy.Split()
 	}
-	fmt.Println("### WorkQueueElements ###")
-	for _, rec := range out {
-		fmt.Println(rec)
+	if utils.VERBOSE > 0 {
+		fmt.Println("### ReqMgr2 record", record)
+		fmt.Println("### WorkQueueElements ###")
+		for _, rec := range out {
+			fmt.Println(rec)
+		}
 	}
 	// insert WorkQueueElement records into CouchDB
 	resp, err := DB.Bulk(out)
@@ -214,4 +161,20 @@ func Process(record utils.Record) {
 	if utils.VERBOSE > 0 {
 		logrus.Info("Insert response: ", resp)
 	}
+}
+
+// helper function which returns request type from given record
+// TODO: I don't know yet full logic how to get request type, awaiting answer from
+//       Seangchan and Alan.
+func requestType(record utils.Record) string {
+	if val, ok := record["RequestType"]; ok {
+		r := val.(string)
+		if strings.Contains(r, "MonteCarlo") {
+			return "MonteCarlo"
+		}
+		if strings.Contains(r, "ResubmitBlock") {
+			return "ResubmitBlock"
+		}
+	}
+	return "Block"
 }

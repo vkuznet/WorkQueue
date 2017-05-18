@@ -43,6 +43,18 @@ type WorkQueueElement struct {
 	FilesProcessed  int
 }
 
+// Mask data structure keeps track of run-lumi
+type Mask struct {
+	InclusiveMask bool
+	FirstEvent    int64
+	LastEvent     int64
+	FirstLumi     int
+	LastLumi      int
+	FirstRun      int
+	LstRun        int
+	RunAndLumis   map[int][]int
+}
+
 // Policy interface defines policy methods
 type Policy interface {
 	Split() []WorkQueueElement

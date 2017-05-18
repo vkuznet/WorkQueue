@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/vkuznet/WorkQueue/core"
@@ -28,6 +29,9 @@ func TestCoreProcess(t *testing.T) {
 	core.InitCouch("http://127.0.0.1:5984", dbName)
 	// create a database
 	if _, err = core.Client.Create(dbName); err != nil {
+		if strings.Contains(err.Error(), "exists") {
+			fmt.Println(err)
+		}
 		panic(err)
 	}
 	utils.VERBOSE = 1
