@@ -24,6 +24,7 @@ type Config struct {
 	MetricsInterval int64  `json:"MetricsInterval"` // interval (in sec) to collect metrics
 	RequestType     string `json:"RequestType"`     // ReqMgr2 type of request to fetch
 	FetchInterval   int64  `json:"FetchInterval"`   // interval (in sec) to fetch ReqMgr2 data
+	CleanupInterval int64  `json:"CleanupInterval"` // interval (in sec) to cleanup WorkQueue DB
 	CouchUrl        string `json:"CouchURL"`        // couch db url
 	DBName          string `json:"DBName"`          // database name to use
 	Port            int    `json:"port"`            // port number given server runs on, default 8989
@@ -62,7 +63,7 @@ func Server(config Config) {
 
 	// initialize task dispatcher
 	dispatcher := core.NewDispatcher(config.Workers, config.QueueSize, config.MetricsFile, config.MetricsInterval)
-	dispatcher.Run(config.RequestType, config.FetchInterval)
+	dispatcher.Run(config.RequestType, config.FetchInterval, config.CleanupInterval)
 
 	var err error
 	if authVar {
