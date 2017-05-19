@@ -8,7 +8,9 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/segmentio/pointer"
 	log "github.com/sirupsen/logrus"
+	"github.com/vkuznet/WorkQueue/utils"
 
 	"github.com/rcrowley/go-metrics"
 	"github.com/zemirco/couchdb"
@@ -100,4 +102,28 @@ func InitCouch(couchUrl, dbName string) {
 	}
 
 	DB = client.Use(dbName)
+}
+
+// GetWorkQueueElements returns list of request in WorkQueue
+func GetWorkQueueElements() []utils.Record {
+	params := couchdb.QueryParameters{
+		Reduce: pointer.Bool(false),
+	}
+	design := "WorkQueue"
+	viewName := "elementsByWorkflow"
+	view := DB.View(design)
+	res, err := view.Get(viewName, params)
+	if err != nil {
+		log.WithFields(log.Fields{"view": fmt.Sprintf("%s/%s", design, viewName)}).Warn(err)
+	}
+	var out []utils.Record
+	for _, row := range res.Rows {
+		if row.Key != nil {
+			record := make(utils.Record)
+			key := row.Key.(string)
+			record[key] = row.Value
+			out = append(out, record)
+		}
+	}
+	return out
 }
