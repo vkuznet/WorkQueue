@@ -2,8 +2,10 @@ package core
 
 import (
 	"encoding/json"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/vkuznet/WorkQueue/utils"
 	"github.com/zemirco/couchdb"
 )
 
@@ -28,7 +30,6 @@ type WorkQueueElement struct {
 	Mask            map[string]int
 	BlowupFactor    int
 	ACDC            string
-	Task            string
 	RequestName     string
 	TaskName        string
 	Dbs             string
@@ -68,4 +69,14 @@ func (w WorkQueueElement) String() string {
 		log.Fatal(err)
 	}
 	return string(rec)
+}
+
+// helper function to find value in reqmgr config record
+func configValue(config utils.Record, key string) interface{} {
+	for k, v := range config {
+		if strings.Contains(k, key) {
+			return v
+		}
+	}
+	return nil
 }
