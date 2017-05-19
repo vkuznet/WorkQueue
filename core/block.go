@@ -24,9 +24,11 @@ func (b *BlockPolicy) Split() []couchdb.CouchDoc {
 	var numberOfLumis, numberOfFiles, numberOfEvents, jobs, blowupFactor, priority, filesProcessed int
 	var parentFlag, openForNewData, noInputUpdate, noPileupUpdate bool
 	var mask map[string]int
-	var acdc, requestName, taskName, dbs, wmSpec, parentQueueUrl, childQueueUrl, wmbsUrl string
+	var acdc, requestName, taskName, dbs, wmSpec, parentQueueUrl, childQueueUrl, wmbsUrl, sPolicy, ePolicy string
 	var siteWhiteList, siteBlackList []string
 	var percentSuccess, percentComplete float32
+	sPolicy = configValue(b.Config, "policies.start.policyName").(string)
+	ePolicy = configValue(b.Config, "policies.end.policyName").(string)
 	for rname, spec := range b.Record { // reqMgr2 record is {request_name: request_spec}
 		switch rec := spec.(type) {
 		case map[string]interface{}:
@@ -81,6 +83,8 @@ func (b *BlockPolicy) Split() []couchdb.CouchDoc {
 				PercentComplete: percentComplete,
 				WMBSUrl:         wmbsUrl,
 				FilesProcessed:  filesProcessed,
+				StartPolicy:     sPolicy,
+				EndPolicy:       ePolicy,
 			}
 			out = append(out, wqe)
 		}

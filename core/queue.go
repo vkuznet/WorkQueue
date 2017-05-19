@@ -42,6 +42,8 @@ type WorkQueueElement struct {
 	PercentComplete float32
 	WMBSUrl         string
 	FilesProcessed  int
+	StartPolicy     string
+	EndPolicy       string
 }
 
 // Mask data structure keeps track of run-lumi
