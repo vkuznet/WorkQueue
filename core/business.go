@@ -136,18 +136,16 @@ func (d *Dispatcher) dispatch(rtype string, interval int64) {
 func Process(record utils.Record) {
 	var out []couchdb.CouchDoc
 	reqConfig := requestConfig(record)
-	fmt.Println("### CONFIG", reqConfig)
 	rType := requestType(reqConfig)
-	fmt.Println("### RequestType", rType)
 	switch rType {
 	case "MonteCarlo":
-		policy := MonteCarloPolicy{Name: "MonteCarlo", Record: record}
+		policy := MonteCarloPolicy{Name: "MonteCarlo", Record: record, Config: reqConfig}
 		out = policy.Split()
 	case "ResubmitBlock":
-		policy := ResubmitBlockPolicy{Name: "ResubmitBlock", Record: record}
+		policy := ResubmitBlockPolicy{Name: "ResubmitBlock", Record: record, Config: reqConfig}
 		out = policy.Split()
 	default:
-		policy := BlockPolicy{Name: "Block", Record: record}
+		policy := BlockPolicy{Name: "Block", Record: record, Config: reqConfig}
 		out = policy.Split()
 	}
 	if utils.VERBOSE > 0 {
