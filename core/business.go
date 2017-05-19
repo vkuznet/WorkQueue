@@ -20,6 +20,7 @@ import (
 // Job represents the job to be run with given request
 type Job struct {
 	Request utils.Record
+	Type    string
 }
 
 // Worker represents the worker that executes the job
@@ -62,7 +63,13 @@ func (w Worker) Start() {
 				WorkqueueMetrics.Jobs.Inc(1)
 
 				// perform some work with a job
-				Process(job.Request)
+				if job.Type == "process" {
+					Process(job.Request)
+				} else if job.Type == "cleanup" {
+					Cleanup(job.Request)
+				} else {
+					logrus.Warn("Unsupported job type: %s", job.Type)
+				}
 
 				// Decrement number of running jobs
 				WorkqueueMetrics.Jobs.Dec(1)
@@ -103,16 +110,19 @@ func NewDispatcher(maxWorkers, maxQueue int, mfile string, minterval int64) *Dis
 }
 
 // Run function starts the worker and dispatch it as go-routine
-func (d *Dispatcher) Run(rtype string, interval int64) {
+func (d *Dispatcher) Run(rtype string, interval, cleanup int64) {
 	// starting n number of workers
 	for i := 0; i < d.MaxWorkers; i++ {
 		worker := NewWorker(i, d.JobPool)
 		worker.Start()
 	}
-	// spawn new go-routine to dispatch
+	// spawn new go-routine to fetch requests from ReqMgr2 and process them
 	go d.dispatch(rtype, interval)
+	// spawn new go-routine to clean-up requests in WorkQueue
+	go d.cleanup(cleanup)
 }
 
+// helper function to dispatch jobs from ReqMgr2
 func (d *Dispatcher) dispatch(rtype string, interval int64) {
 	for {
 		// fetch new set of requests from ReqMgr2
@@ -124,7 +134,27 @@ func (d *Dispatcher) dispatch(rtype string, interval int64) {
 				// this will block until a worker is idle
 				jobChannel := <-d.JobPool
 				// dispatch the request to the worker job channel
-				job := Job{Request: req}
+				job := Job{Request: req, Type: "process"}
+				jobChannel <- job
+			}(req)
+		}
+		time.Sleep(time.Duration(interval) * time.Second) // wait for a job
+	}
+}
+
+// helper function to cleanup WorkQueue
+func (d *Dispatcher) cleanup(interval int64) {
+	for {
+		// fetch new set of requests from ReqMgr2
+		requests := GetWorkQueueElements()
+		for _, req := range requests {
+			// submit request to processing chain
+			go func(req utils.Record) {
+				// try to obtain a worker job channel that is available.
+				// this will block until a worker is idle
+				jobChannel := <-d.JobPool
+				// dispatch the request to the worker job channel
+				job := Job{Request: req, Type: "cleanup"}
 				jobChannel <- job
 			}(req)
 		}
@@ -183,4 +213,33 @@ func requestType(config utils.Record) string {
 		}
 	}
 	return "Block"
+}
+
+// Cleanup performs clean-up of WorkQueue
+func Cleanup(record utils.Record) {
+	// NB: here three for loops is actually a one pass, since
+	// first for loop gets record name
+	// second for loop gets single document from reqMgr2 doc list
+	// third gets spec from reqMgr2 document
+	for rname, val := range record {
+		request := services.GetRequest(rname)
+		for _, req := range request { // reqMgr2 returns always a list
+			for _, spec := range req { // reqMgr2 record is {request_name: request_spec}
+				switch rec := spec.(type) {
+				case map[string]interface{}:
+					status, _ := rec["RequestStatus"].(string)
+					if status == "running-closed" {
+						v := val.(map[string]interface{})
+						id := v["_id"].(string)
+						rev := v["_rev"].(string)
+						doc := &couchdb.Document{ID: id, Rev: rev}
+						//                         DB.Delete(doc)
+						if _, err := DB.Delete(doc); err != nil {
+							logrus.Warn("Unable to delete a document, error ", err)
+						}
+					}
+				}
+			}
+		}
+	}
 }
