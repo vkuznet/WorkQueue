@@ -14,6 +14,7 @@ import (
 type BlockPolicy struct {
 	Name   string
 	Record utils.Record
+	Config utils.Record
 }
 
 // Split method satisfy Policy interface
@@ -23,7 +24,7 @@ func (b *BlockPolicy) Split() []couchdb.CouchDoc {
 	var numberOfLumis, numberOfFiles, numberOfEvents, jobs, blowupFactor, priority, filesProcessed int
 	var parentFlag, openForNewData, noInputUpdate, noPileupUpdate bool
 	var mask map[string]int
-	var acdc, task, requestName, taskName, dbs, wmSpec, parentQueueUrl, childQueueUrl, wmbsUrl string
+	var acdc, requestName, taskName, dbs, wmSpec, parentQueueUrl, childQueueUrl, wmbsUrl string
 	var siteWhiteList, siteBlackList []string
 	var percentSuccess, percentComplete float32
 	for rname, spec := range b.Record { // reqMgr2 record is {request_name: request_spec}
@@ -38,6 +39,7 @@ func (b *BlockPolicy) Split() []couchdb.CouchDoc {
 			siteWhiteList, _ = rec["siteWhitelist"].([]string)
 			siteBlackList, _ = rec["whiteBlacklist"].([]string)
 			priority, _ = rec["RequestPriority"].(int)
+			wmSpec, _ = rec["RequestWorkflow"].(string)
 			inputDataset, _ := rec["InputDataset"].(string)
 			blocks := services.Blocks(inputDataset)
 			maskedBlocks := services.MaskedBlocks(blocks)
@@ -69,7 +71,6 @@ func (b *BlockPolicy) Split() []couchdb.CouchDoc {
 				ACDC:            acdc,
 				Dbs:             dbs,
 				TaskName:        taskName,
-				Task:            task,
 				RequestName:     requestName,
 				SiteWhiteList:   siteWhiteList,
 				SiteBlackList:   siteBlackList,
