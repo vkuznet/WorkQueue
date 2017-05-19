@@ -12,6 +12,7 @@ import (
 type ResubmitBlockPolicy struct {
 	Name   string
 	Record utils.Record
+	Config utils.Record
 }
 
 // Split method satisfy Policy interface
