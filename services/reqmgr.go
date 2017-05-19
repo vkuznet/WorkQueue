@@ -53,6 +53,14 @@ func GetRequests(status string) []utils.Record {
 	return data
 }
 
+// GetRequest function fetches request from ReqMgr2 for given request name
+func GetRequest(name string) []utils.Record {
+	rurl := fmt.Sprintf("%s/data/request?name=%s", reqmgrUrl(), name)
+	resp := utils.FetchResponse(rurl, "")
+	data := loadReqMgrData(resp.Data)
+	return data
+}
+
 // RequestConfig fetch reqmgr record configuration
 func RequestConfig(name string) utils.Record {
 	rurl := fmt.Sprintf("%s/config?name=%s", reqmgrUrl(), name)
