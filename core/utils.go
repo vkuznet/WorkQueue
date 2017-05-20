@@ -105,9 +105,16 @@ func InitCouch(couchUrl, dbName string) {
 }
 
 // GetWorkQueueElements returns list of request in WorkQueue
-func GetWorkQueueElements() []utils.Record {
+func GetWorkQueueElements(rname string) []utils.Record {
 	params := couchdb.QueryParameters{
 		Reduce: pointer.Bool(false),
+		Stale:  pointer.String("ok"),
+	}
+	if rname != "" {
+		params = couchdb.QueryParameters{
+			Reduce: pointer.Bool(false),
+			Key:    pointer.String(rname),
+		}
 	}
 	design := "WorkQueue"
 	viewName := "elementsByWorkflow"
@@ -126,4 +133,17 @@ func GetWorkQueueElements() []utils.Record {
 		}
 	}
 	return out
+}
+
+// InWorkQueue returns if given request name in WorkQueue
+func InWorkQueue(rname string) bool {
+	requests := GetWorkQueueElements(rname)
+	for _, record := range requests {
+		for name, _ := range record {
+			if name == rname {
+				return true
+			}
+		}
+	}
+	return false
 }

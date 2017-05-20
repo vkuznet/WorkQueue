@@ -59,9 +59,6 @@ func (w Worker) Start() {
 			w.JobPool <- w.JobChannel
 			select {
 			case job := <-w.JobChannel:
-				// Increment number of running jobs
-				WorkqueueMetrics.Jobs.Inc(1)
-
 				// perform some work with a job
 				if job.Type == "process" {
 					Process(job.Request)
@@ -70,9 +67,6 @@ func (w Worker) Start() {
 				} else {
 					logrus.Warn("Unsupported job type: %s", job.Type)
 				}
-
-				// Decrement number of running jobs
-				WorkqueueMetrics.Jobs.Dec(1)
 			case <-w.quit:
 				// we have received a signal to stop
 				return
@@ -146,7 +140,7 @@ func (d *Dispatcher) dispatch(rtype string, interval int64) {
 func (d *Dispatcher) cleanup(interval int64) {
 	for {
 		// fetch new set of requests from ReqMgr2
-		requests := GetWorkQueueElements()
+		requests := GetWorkQueueElements("") // here we pass empty key
 		for _, req := range requests {
 			// submit request to processing chain
 			go func(req utils.Record) {
@@ -164,6 +158,9 @@ func (d *Dispatcher) cleanup(interval int64) {
 
 // Process given request
 func Process(record utils.Record) {
+	// Increment number of running jobs
+	WorkqueueMetrics.Jobs.Inc(1)
+
 	var out []couchdb.CouchDoc
 	reqConfig := requestConfig(record)
 	rType := requestType(reqConfig)
@@ -217,6 +214,8 @@ func requestType(config utils.Record) string {
 
 // Cleanup performs clean-up of WorkQueue
 func Cleanup(record utils.Record) {
+	// Decrement number of running jobs
+	WorkqueueMetrics.Jobs.Dec(1)
 	// NB: here three for loops is actually a one pass, since
 	// first for loop gets record name
 	// second for loop gets single document from reqMgr2 doc list
@@ -235,7 +234,8 @@ func Cleanup(record utils.Record) {
 						doc := &couchdb.Document{ID: id, Rev: rev}
 						//                         DB.Delete(doc)
 						if _, err := DB.Delete(doc); err != nil {
-							logrus.Warn("Unable to delete a document, error ", err)
+							msg := fmt.Sprintf("Unable to delete %s %s, %s", rname, status, err)
+							logrus.Warn(msg)
 						}
 					}
 				}

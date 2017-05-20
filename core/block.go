@@ -27,9 +27,18 @@ func (b *BlockPolicy) Split() []couchdb.CouchDoc {
 	var acdc, requestName, taskName, dbs, wmSpec, parentQueueUrl, childQueueUrl, wmbsUrl, sPolicy, ePolicy string
 	var siteWhiteList, siteBlackList []string
 	var percentSuccess, percentComplete float32
-	sPolicy = configValue(b.Config, "policies.start.policyName").(string)
-	ePolicy = configValue(b.Config, "policies.end.policyName").(string)
+	v1 := configValue(b.Config, "policies.start.policyName")
+	if v1 != nil {
+		sPolicy = v1.(string)
+	}
+	v2 := configValue(b.Config, "policies.end.policyName")
+	if v2 != nil {
+		ePolicy = v2.(string)
+	}
 	for rname, spec := range b.Record { // reqMgr2 record is {request_name: request_spec}
+		if InWorkQueue(rname) {
+			break
+		}
 		switch rec := spec.(type) {
 		case map[string]interface{}:
 			requestName, _ = rec["RequestName"].(string)
