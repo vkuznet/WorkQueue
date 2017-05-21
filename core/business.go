@@ -161,34 +161,44 @@ func Process(record utils.Record) {
 	// Increment number of running jobs
 	WorkqueueMetrics.Jobs.Inc(1)
 
-	var out []couchdb.CouchDoc
+	var docs []couchdb.CouchDoc
 	reqConfig := requestConfig(record)
 	rType := requestType(reqConfig)
 	switch rType {
 	case "MonteCarlo":
 		policy := MonteCarloPolicy{Name: "MonteCarlo", Record: record, Config: reqConfig}
-		out = policy.Split()
+		docs = policy.Split()
 	case "ResubmitBlock":
 		policy := ResubmitBlockPolicy{Name: "ResubmitBlock", Record: record, Config: reqConfig}
-		out = policy.Split()
+		docs = policy.Split()
 	default:
 		policy := BlockPolicy{Name: "Block", Record: record, Config: reqConfig}
-		out = policy.Split()
+		docs = policy.Split()
 	}
 	if utils.VERBOSE > 0 {
 		fmt.Println("### ReqMgr2 record", record)
 		fmt.Println("### WorkQueueElements ###")
-		for _, rec := range out {
+		for _, rec := range docs {
 			fmt.Println(rec)
 		}
 	}
-	// insert WorkQueueElement records into CouchDB
-	resp, err := DB.Bulk(out)
-	if err != nil {
-		logrus.Warn("Insert error: ", err, resp)
+	// if no results we do nothing
+	if len(docs) == 0 {
+		return
 	}
+	// insert WorkQueueElement records into CouchDB
+	resp, err := DB.Bulk(docs)
 	if utils.VERBOSE > 0 {
 		logrus.Info("Insert response: ", resp)
+	}
+	if err != nil {
+		logrus.Warn("Insert bulk error: ", err, resp)
+		for _, doc := range docs {
+			if resp, err := DB.Post(doc); err != nil {
+				logrus.Warn("Insert Post error: ", err, resp)
+			}
+
+		}
 	}
 }
 
