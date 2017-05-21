@@ -6,6 +6,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -102,6 +103,8 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	arr := strings.Split(r.URL.Path, "/")
 	path := arr[len(arr)-1]
 	switch path {
+	case "verbose":
+		VerboseHandler(w, r)
 	case "status":
 		StatusHandler(w, r)
 	case "requests":
@@ -178,3 +181,26 @@ func DefaultHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST methods
+
+type level struct {
+	Level int `json:"level"`
+}
+
+// VerboseHandler sets verbosity level for the server
+func VerboseHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Warn("Unable to parse request body: ", err)
+	}
+	var v level
+	err = json.Unmarshal(body, &v)
+	if err == nil {
+		log.Info("Switch to verbose level: ", v.Level)
+		utils.VERBOSE = v.Level
+	}
+	w.WriteHeader(http.StatusOK)
+}
