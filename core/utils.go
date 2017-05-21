@@ -113,7 +113,7 @@ func GetWorkQueueElements(rname string) []utils.Record {
 	if rname != "" {
 		params = couchdb.QueryParameters{
 			Reduce: pointer.Bool(false),
-			Key:    pointer.String(rname),
+			Key:    pointer.String(fmt.Sprintf("\"%s\"", rname)),
 		}
 	}
 	design := "WorkQueue"
