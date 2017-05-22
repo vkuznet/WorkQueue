@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/url"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/vkuznet/WorkQueue/utils"
 )
 
@@ -27,7 +28,7 @@ func loadDBSData(data []byte) []utils.Record {
 	// err := json.Unmarshal(data, &out)
 	if err != nil {
 		msg := fmt.Sprintf("DBS unable to unmarshal the data, data=%s, error=%v", string(data), err)
-		fmt.Println(msg)
+		log.Error(msg)
 	}
 	return out
 }

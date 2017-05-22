@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/vkuznet/WorkQueue/utils"
 )
 
@@ -29,7 +30,8 @@ func loadSiteDBData(data []byte) []utils.Record {
 	// err := json.Unmarshal(data, &rec)
 	if err != nil {
 		msg := fmt.Sprintf("SiteDB unable to unmarshal the data, data=%s, error=%v", string(data), err)
-		fmt.Println(msg)
+		log.Error(msg)
+		return out
 	}
 	desc := rec["desc"].(map[string]interface{})
 	headers := desc["columns"].([]interface{})
