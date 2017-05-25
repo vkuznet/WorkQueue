@@ -56,8 +56,10 @@ func Process(requests []Request) []utils.Record {
 	defer close(out)
 	umap := map[string]int{}
 	for _, req := range requests {
-		umap[req.Url] = 1 // keep track of processed urls below
-		go utils.Fetch(req.Url, req.Args, out)
+		if _, ok := umap[req.Url]; !ok { // check if our map does not have req.Url
+			umap[req.Url] = 1 // keep track of processed urls below
+			go utils.Fetch(req.Url, req.Args, out)
+		}
 	}
 
 	// collect all results from out channel
