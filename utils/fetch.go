@@ -14,7 +14,6 @@ import (
 	"net/http/httputil"
 	"os"
 	"os/user"
-	"regexp"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -206,14 +205,10 @@ func Fetch(rurl, args string, ch chan<- ResponseType) {
 // Helper function which validates given URL
 func validateUrl(rurl string) bool {
 	if len(rurl) > 0 {
-		pat := "(https|http)://[-A-Za-z0-9_+&@#/%?=~_|!:,.;]*[-A-Za-z0-9+&@#/%=~_|]"
-		matched, err := regexp.MatchString(pat, rurl)
-		if err == nil {
-			if matched == true {
-				return true
-			}
+		if PatternUrl.MatchString(rurl) {
+			return true
 		}
-		log.Println("ERROR invalid URL:", rurl)
+		log.Error("invalid URL: ", rurl)
 	}
 	return false
 }

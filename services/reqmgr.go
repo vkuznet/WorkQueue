@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -81,7 +80,7 @@ func RequestConfig(name string) utils.Record {
 						reqConfig[key] = false
 					} else if val == "True" {
 						reqConfig[key] = true
-					} else if m, _ := regexp.MatchString("^[0-9]", val); m {
+					} else if utils.PatternNumber.MatchString(val) {
 						v, e := strconv.ParseInt(val, 10, 64)
 						if e == nil {
 							reqConfig[key] = v
