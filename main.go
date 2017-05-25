@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/pkg/profile"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/vkuznet/WorkQueue/server"
@@ -26,7 +27,18 @@ func main() {
 	flag.IntVar(&verbose, "verbose", 0, "verbose level")
 	var authVar bool
 	flag.BoolVar(&authVar, "auth", true, "To disable the auth layer")
+	mode := flag.String("profileMode", "", "enable profiling mode, one of [cpu, mem, block]")
 	flag.Parse()
+	switch *mode {
+	case "cpu":
+		defer profile.Start(profile.CPUProfile, profile.ProfilePath(".")).Stop()
+	case "mem":
+		defer profile.Start(profile.MemProfile, profile.ProfilePath(".")).Stop()
+	case "block":
+		defer profile.Start(profile.BlockProfile, profile.ProfilePath(".")).Stop()
+	default:
+		// do nothing
+	}
 
 	if authVar {
 		utils.CheckX509()
