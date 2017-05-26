@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"os"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/pkg/profile"
@@ -61,29 +60,14 @@ func main() {
 		log.Println("Unable to parse", configFile, err)
 		os.Exit(1)
 	}
-	// set logger settings depending on configuration
-	if strings.Contains(strings.ToLower(config.LogFormatter), "json") {
-		log.SetFormatter(&log.JSONFormatter{})
-	}
-	if strings.Contains(strings.ToLower(config.LogLevel), "info") {
-		log.SetLevel(log.InfoLevel)
-	}
-	if strings.Contains(strings.ToLower(config.LogLevel), "warn") {
-		log.SetLevel(log.WarnLevel)
-	}
-	if strings.Contains(strings.ToLower(config.LogLevel), "err") {
-		log.SetLevel(log.ErrorLevel)
-	}
-	if strings.Contains(strings.ToLower(config.LogLevel), "debug") {
-		utils.VERBOSE = 2 // overwrite default since we want to get deep view
-		log.SetLevel(log.DebugLevel)
-	}
+	utils.LogSettings(config.LogLevel, config.LogFormatter)
 	log.Println("VERBOSE", utils.VERBOSE)
+
 	// measure in backround memory usage of the server
 	var m runtime.MemStats
 	go func() {
 		for {
-			if utils.VERBOSE > 0 {
+			if utils.MEMORY {
 				runtime.ReadMemStats(&m)
 				log.WithFields(log.Fields{
 					"system":  m.HeapSys,
