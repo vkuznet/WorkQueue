@@ -9,7 +9,9 @@ import (
 	"flag"
 	"io/ioutil"
 	"os"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/pkg/profile"
 	log "github.com/sirupsen/logrus"
@@ -77,5 +79,22 @@ func main() {
 		log.SetLevel(log.DebugLevel)
 	}
 	log.Println("VERBOSE", utils.VERBOSE)
+	// measure in backround memory usage of the server
+	var m runtime.MemStats
+	go func() {
+		for {
+			if utils.VERBOSE > 0 {
+				runtime.ReadMemStats(&m)
+				log.WithFields(log.Fields{
+					"system":  m.HeapSys,
+					"alloc":   m.HeapAlloc,
+					"idle":    m.HeapIdle,
+					"release": m.HeapReleased,
+				}).Info("heap memory")
+			}
+			time.Sleep(time.Duration(1) * time.Second) // wait for a job
+		}
+	}()
+	// Start the server
 	server.Server(config)
 }
