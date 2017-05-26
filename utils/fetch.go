@@ -39,9 +39,6 @@ type UrlRequest struct {
 	ts   int64
 }
 
-// VERBOSE variable control verbosity level of client's utilities
-var VERBOSE int
-
 // create global HTTP client and re-use it through the code
 var _client = HttpClient()
 var _certs []tls.Certificate
