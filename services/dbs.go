@@ -4,7 +4,6 @@ package services
 // Copyright (c) 2015-2016 - Valentin Kuznetsov <vkuznet AT gmail dot com>
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -19,13 +18,17 @@ func loadDBSData(data []byte) []utils.Record {
 
 	// to prevent json.Unmarshal behavior to convert all numbers to float
 	// we'll use json decode method with instructions to use numbers as is
-	buf := bytes.NewBuffer(data)
+	//     buf := bytes.NewBuffer(data)
+
+	buf := makeBuffer(data)
+	defer releaseBuffer(buf)
 	dec := json.NewDecoder(buf)
 	dec.UseNumber()
 	err := dec.Decode(&out)
 
 	// original way to decode data
 	// err := json.Unmarshal(data, &out)
+
 	if err != nil {
 		msg := fmt.Sprintf("DBS unable to unmarshal the data, data=%s, error=%v", string(data), err)
 		log.Error(msg)

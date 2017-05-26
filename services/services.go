@@ -4,6 +4,7 @@ package services
 // Copyright (c) 2017 - Valentin Kuznetsov <vkuznet@gmail.com>
 
 import (
+	"bytes"
 	"strings"
 	"time"
 
@@ -21,6 +22,14 @@ func sitedbUrl() string {
 }
 func reqmgrUrl() string {
 	return "https://cmsweb.cern.ch/reqmgr2"
+}
+
+func makeBuffer(data []byte) *bytes.Buffer {
+	return bytes.NewBuffer(data)
+}
+func releaseBuffer(buf *bytes.Buffer) {
+	buf.Reset()
+	buf = nil
 }
 
 // Unmarshal
@@ -68,7 +77,6 @@ func Process(requests []Request) []utils.Record {
 	for {
 		select {
 		case r := <-out:
-			record := make(utils.Record)
 			var records []utils.Record
 			for _, rec := range Unmarshal(r) {
 				records = append(records, rec)
@@ -80,8 +88,11 @@ func Process(requests []Request) []utils.Record {
 					break
 				}
 			}
+			// create new record which will hold requestName and its records
+			record := make(utils.Record)
 			record[requestName] = records
 			outRecords = append(outRecords, record)
+
 			// remove from umap, indicate that we processed it
 			delete(umap, r.Url) // remove Url from map
 		default:

@@ -4,7 +4,6 @@ package services
 // Copyright (c) 2015-2016 - Valentin Kuznetsov <vkuznet AT gmail dot com>
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -21,7 +20,10 @@ func loadReqMgrData(data []byte) []utils.Record {
 	var rec utils.Record
 	// to prevent json.Unmarshal behavior to convert all numbers to float
 	// we'll use json decode method with instructions to use numbers as is
-	buf := bytes.NewBuffer(data)
+	//     buf := bytes.NewBuffer(data)
+
+	buf := makeBuffer(data)
+	defer releaseBuffer(buf)
 	dec := json.NewDecoder(buf)
 	dec.UseNumber()
 	err := dec.Decode(&rec)
@@ -31,7 +33,7 @@ func loadReqMgrData(data []byte) []utils.Record {
 
 	if err != nil {
 		msg := fmt.Sprintf("ReqMgr unable to unmarshal data, data=%s, error=%v", string(data), err)
-		log.Println(msg)
+		log.Error(msg)
 	}
 	for _, r := range rec["result"].([]interface{}) {
 		out = append(out, utils.Convert2Record(r))
