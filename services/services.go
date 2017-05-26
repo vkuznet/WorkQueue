@@ -4,7 +4,6 @@ package services
 // Copyright (c) 2017 - Valentin Kuznetsov <vkuznet@gmail.com>
 
 import (
-	"bytes"
 	"strings"
 	"time"
 
@@ -22,14 +21,6 @@ func sitedbUrl() string {
 }
 func reqmgrUrl() string {
 	return "https://cmsweb.cern.ch/reqmgr2"
-}
-
-func makeBuffer(data []byte) *bytes.Buffer {
-	return bytes.NewBuffer(data)
-}
-func releaseBuffer(buf *bytes.Buffer) {
-	buf.Reset()
-	buf = nil
 }
 
 // Unmarshal

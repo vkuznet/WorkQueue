@@ -6,6 +6,7 @@ package services
 //
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -20,10 +21,7 @@ func loadSiteDBData(data []byte) []utils.Record {
 
 	// to prevent json.Unmarshal behavior to convert all numbers to float
 	// we'll use json decode method with instructions to use numbers as is
-	//     buf := bytes.NewBuffer(data)
-
-	buf := makeBuffer(data)
-	defer releaseBuffer(buf)
+	buf := bytes.NewBuffer(data)
 	dec := json.NewDecoder(buf)
 	dec.UseNumber()
 	err := dec.Decode(&rec)
