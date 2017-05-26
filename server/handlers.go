@@ -103,8 +103,8 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	arr := strings.Split(r.URL.Path, "/")
 	path := arr[len(arr)-1]
 	switch path {
-	case "verbose":
-		VerboseHandler(w, r)
+	case "log":
+		LogHandler(w, r)
 	case "status":
 		StatusHandler(w, r)
 	case "requests":
@@ -186,8 +186,8 @@ type level struct {
 	Level int `json:"level"`
 }
 
-// VerboseHandler sets verbosity level for the server
-func VerboseHandler(w http.ResponseWriter, r *http.Request) {
+// LogHandler sets verbosity level for the server
+func LogHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -196,11 +196,27 @@ func VerboseHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Warn("Unable to parse request body: ", err)
 	}
-	var v level
+	var v struct {
+		Level     int    `json:"level"`
+		Metric    string `json:"metric"`
+		LogLevel  string `json:"loglevel"`
+		LogFormat string `json:"logformat"`
+	}
 	err = json.Unmarshal(body, &v)
 	if err == nil {
-		log.Info("Switch to verbose level: ", v.Level)
-		utils.VERBOSE = v.Level
+		switch v.Metric {
+		case "verbose":
+			utils.VERBOSE = v.Level
+		case "memory":
+			if v.Level == 0 {
+				utils.MEMORY = false
+			} else {
+				utils.MEMORY = true
+			}
+		case "log":
+			utils.LogSettings(v.LogLevel, v.LogFormat)
+		default:
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }
