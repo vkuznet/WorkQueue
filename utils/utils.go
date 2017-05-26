@@ -15,6 +15,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"text/template"
 
 	log "github.com/sirupsen/logrus"
@@ -22,6 +23,12 @@ import (
 
 // STATICDIR defines location of all static files
 var STATICDIR string
+
+// VERBOSE variable controls verbosity level of client's utilities
+var VERBOSE int
+
+// MEMORY variable controls memory printout
+var MEMORY bool
 
 // ListFiles function list files in given directory
 func ListFiles(dir string) []string {
@@ -202,5 +209,30 @@ func CheckX509() {
 		msg += "and setup X509_USER_PROXY or setup X509_USER_KEY/X509_USER_CERT in your environment"
 		log.Println(msg)
 		os.Exit(-1)
+	}
+}
+
+// LogSettings setups settings for underlying logrus logger
+func LogSettings(level string, format string) {
+	if strings.Contains(strings.ToLower(format), "json") {
+		log.SetFormatter(&log.JSONFormatter{})
+	} else {
+		log.SetFormatter(&log.TextFormatter{})
+	}
+	switch strings.ToLower(level) {
+	case "info":
+		log.SetLevel(log.InfoLevel)
+		VERBOSE = 1
+	case "warn", "warning":
+		log.SetLevel(log.WarnLevel)
+		VERBOSE = 1
+	case "err", "error":
+		log.SetLevel(log.ErrorLevel)
+		VERBOSE = 1
+	case "debug", "verbose":
+		log.SetLevel(log.DebugLevel)
+		VERBOSE = 2
+	default:
+		VERBOSE = 0
 	}
 }
