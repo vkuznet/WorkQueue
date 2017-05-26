@@ -43,7 +43,8 @@ type UrlRequest struct {
 var VERBOSE int
 
 // create global HTTP client and re-use it through the code
-var client = HttpClient()
+var _client = HttpClient()
+var _certs []tls.Certificate
 
 // UserDN function parses user Distinguished Name (DN) from client's HTTP request
 func UserDN(r *http.Request) string {
@@ -62,6 +63,9 @@ func UserDN(r *http.Request) string {
 
 // client X509 certificates
 func tlsCerts() ([]tls.Certificate, error) {
+	if len(_certs) != 0 {
+		return _certs, nil // use cached certs
+	}
 	uproxy := os.Getenv("X509_USER_PROXY")
 	uckey := os.Getenv("X509_USER_KEY")
 	ucert := os.Getenv("X509_USER_CERT")
@@ -89,32 +93,32 @@ func tlsCerts() ([]tls.Certificate, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse proxy X509 proxy set by X509_USER_PROXY: %v", err)
 		}
-		return []tls.Certificate{x509cert}, nil
+		_certs = []tls.Certificate{x509cert}
+		return _certs, nil
 	}
 	x509cert, err := tls.LoadX509KeyPair(ucert, uckey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse user X509 certificate: %v", err)
 	}
-	return []tls.Certificate{x509cert}, nil
+	_certs = []tls.Certificate{x509cert}
+	return _certs, nil
 }
 
-// HttpClient is HTTP client for urlfetch server
-func HttpClient() (client *http.Client) {
+// HttpClient provides HTTP client
+func HttpClient() *http.Client {
 	// get X509 certs
 	certs, err := tlsCerts()
 	if err != nil {
 		panic(err.Error())
 	}
 	if len(certs) == 0 {
-		client = &http.Client{}
-		return
+		return &http.Client{}
 	}
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{Certificates: certs,
 			InsecureSkipVerify: true},
 	}
-	client = &http.Client{Transport: tr}
-	return
+	return &http.Client{Transport: tr}
 }
 
 func (r *ResponseType) String() string {
@@ -147,7 +151,7 @@ func FetchResponse(rurl, args string) ResponseType {
 		dump1, err1 := httputil.DumpRequestOut(req, true)
 		log.Println("HTTP request", req, string(dump1), err1)
 	}
-	resp, err := client.Do(req)
+	resp, err := _client.Do(req)
 	if err != nil {
 		log.Println("HTTP ERROR", err)
 		response.Error = err
@@ -157,9 +161,9 @@ func FetchResponse(rurl, args string) ResponseType {
 	response.StatusCode = resp.StatusCode
 	if VERBOSE > 0 {
 		if len(args) > 0 {
-			log.Println("HTTP POST", rurl, string(args), err, time.Now().Sub(startTime))
+			log.Println("HTTP POST", _client, rurl, string(args), err, time.Now().Sub(startTime))
 		} else {
-			log.Println("HTTP GET", rurl, string(args), err, time.Now().Sub(startTime))
+			log.Println("HTTP GET", _client, rurl, err, time.Now().Sub(startTime))
 		}
 	}
 	if VERBOSE > 1 {
